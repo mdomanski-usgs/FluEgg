@@ -68,9 +68,19 @@ alivemodel = 1;  %if alivemodel=1 the eggs would not die
 Exit = 0; %If we exit the code
 % =======================================================================
 
+%%ZZ EggID for batch simulation
+EggID = handles.userdata.RunNumber;
+hFluEggGui = getappdata(0,'hFluEggGui');
+HECRAS_data=getappdata(hFluEggGui,'inputdata');    
+%%ZZ batch simulation
+if size(HECRAS_data.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
+    SpawningTime = HECRAS_data.Batch.Batchinputfile(EggID,6); %Read from a batch input file
+end
+
 %% Imports input data
 
 Totaltime = single(handles.userdata.Totaltime*3600);%seconds
+
 %% HECRAS input
 try
     
@@ -78,7 +88,7 @@ try
     HECRAS_data=getappdata(hFluEggGui,'inputdata');
     HECRAS_time_index=HECRAS_data.HECRASspawiningTimeIndex;%HEC-RAS spawning time index, different from
     %spawning time. It is the same or previous date with hydraulic data.
-    
+
     date=arrayfun(@(x) datenum(x.Date,'ddmmyyyy HHMM'), HECRAS_data.Profiles);
     %Calculate Hydraulic Time step-->From HEC-RAS
     HDt=datestr(date(2)-date(1),'dd HH MM SS');
@@ -98,7 +108,7 @@ try
     SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
     SpawningTime=strjoin(SpawningTime);
     SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
-
+    
     %HEC-RAS date and time when spawning occours:
     HECRAS_StartingTime=date(HECRAS_time_index);%in days
     
