@@ -182,6 +182,8 @@ else
                 return
             end
         end %try
+        set(handles.NumSim,'String',size(Batchinputfile,1)); %ZZ set total number of simulation according to input file
+        inputdata.Batch.NumSim=str2double(get(handles.NumSim,'String'));
     end
 end %if user pres cancel
 %%

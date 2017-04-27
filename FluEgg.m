@@ -254,8 +254,18 @@ if strcmp(Batchmode,'on')
             handles.userdata.Zi=inputdata.Batch.Batchinputfile(k,4);
             handles.userdata.Totaltime=inputdata.Batch.Batchinputfile(k,7);
             
-            if inputdata.Batch.Batchinputfile(k,3) ~= 0 % If Yi is known. Otherwise, use the middle of the cross section
+            if inputdata.Batch.Batchinputfile(k,3) > 0 % If Yi is known. 
                 handles.userdata.Yi=inputdata.Batch.Batchinputfile(k,3);
+            else % Otherwise, use the middle of the cross section
+                try
+                    HECRAS_time_index=inputdata.HECRASspawiningTimeIndex; %if HEC-RAS unsteady
+                catch
+                    HECRAS_time_index=1; %if steady state using .xls.
+                end
+                Riverinputfile=inputdata.Profiles(HECRAS_time_index).Riverinputfile;
+                C = find(handles.userdata.Xi<single(Riverinputfile(:,2))*1000,1,'first');
+                Width = abs(Riverinputfile(:,4)./(Riverinputfile(:,5).*Riverinputfile(:,3))); %Q/(Vmag*Depth)
+                handles.userdata.Yi=floor(Width(C)*100/2)/100;
             end
         end
 %%===========================================================================
