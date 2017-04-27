@@ -251,9 +251,12 @@ if strcmp(Batchmode,'on')
         if size(inputdata.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
             handles.userdata.Num_Eggs=inputdata.Batch.Batchinputfile(k,5);
             handles.userdata.Xi=inputdata.Batch.Batchinputfile(k,2);
-            handles.userdata.Yi=inputdata.Batch.Batchinputfile(k,3);
             handles.userdata.Zi=inputdata.Batch.Batchinputfile(k,4);
             handles.userdata.Totaltime=inputdata.Batch.Batchinputfile(k,7);
+            
+            if inputdata.Batch.Batchinputfile(k,3) ~= 0 % If Yi is known. Otherwise, use the middle of the cross section
+                handles.userdata.Yi=inputdata.Batch.Batchinputfile(k,3);
+            end
         end
 %%===========================================================================
         
