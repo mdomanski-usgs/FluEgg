@@ -35,7 +35,7 @@ switch Inv_mod_status
     case 'on' % If inverse modeling is activated
         Inv_mod=-1;
         %% Inverse modeling [TG}
-        if strcmp(Batchmode,'off') %ZZ avoid warning message in batch simulations
+        if strcmp(get(handles.Batch,'Checked'),'off') %ZZ avoid warning message in batch simulations
         choice = questdlg('You are about to start an inverse simulation of drifting eggs, are you sure you want to continue?'...
             ,'Warning','Yes','No','Yes');
         switch choice
