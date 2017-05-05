@@ -72,12 +72,6 @@ Exit = 0; %If we exit the code
 
 %%ZZ EggID for batch simulation
 EggID = handles.userdata.RunNumber;
-hFluEggGui = getappdata(0,'hFluEggGui');
-HECRAS_data=getappdata(hFluEggGui,'inputdata');    
-%%ZZ batch simulation
-if size(HECRAS_data.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
-    SpawningTime = HECRAS_data.Batch.Batchinputfile(EggID,6); %Read from a batch input file
-end
 
 %% Imports input data
 
@@ -106,10 +100,15 @@ try
     setappdata(hFluEggGui,'inputdata',HECRAS_data)
     
     % Spawning Start Time
-    %Spawning date and time in number
-    SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
-    SpawningTime=strjoin(SpawningTime);
-    SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
+    %Spawning date and time in number  
+    %%ZZ batch simulation
+    if size(HECRAS_data.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
+        SpawningTime = HECRAS_data.Batch.Batchinputfile(EggID,6); %Read from a batch input file
+    else
+        SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
+        SpawningTime=strjoin(SpawningTime);
+        SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
+    end
     
     %HEC-RAS date and time when spawning occours:
     HECRAS_StartingTime=date(HECRAS_time_index);%in days
@@ -963,8 +962,16 @@ Jump;
         Vlat = Riverinputfile(:,6);           %m/s
         Vvert = Riverinputfile(:,7);          %m/s
         Ustar = Riverinputfile(:,8);          %m/s
-        Temp = Riverinputfile(:,9);          %C
         
+        %%ZZ batch simulation
+        if size(HECRAS_data.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
+            %Read from a batch input file, temperature is constant in time
+            %and space for one egg but differ between different simulated eggs in
+            %batch simulation
+            Temp = ones(size(Riverinputfile(:,9)))*HECRAS_data.Batch.Batchinputfile(EggID,8); 
+        else
+            Temp = Riverinputfile(:,9);          %C
+        end
         %==========================================================================
         %% Calculations
         Width = abs(Q./(Vmag.*Depth));               %m
