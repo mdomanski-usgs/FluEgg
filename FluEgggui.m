@@ -71,7 +71,9 @@ Exit = 0; %If we exit the code
 % =======================================================================
 
 %%ZZ EggID for batch simulation
+if strcmp(get(handles.Batch,'Checked'),'on')
 EggID = handles.userdata.RunNumber;
+end
 
 %% Imports input data
 
@@ -964,11 +966,13 @@ Jump;
         Ustar = Riverinputfile(:,8);          %m/s
         
         %%ZZ batch simulation
+        if strcmp(get(handles.Batch,'Checked'),'on')
         if size(HECRAS_data.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
             %Read from a batch input file, temperature is constant in time
             %and space for one egg but differ between different simulated eggs in
             %batch simulation
             Temp = ones(size(Riverinputfile(:,9)))*HECRAS_data.Batch.Batchinputfile(EggID,8); 
+        end
         else
             Temp = Riverinputfile(:,9);          %C
         end
