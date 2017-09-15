@@ -581,6 +581,11 @@ function edit_Ending_time_Callback(hObject, eventdata, handles)
 hFluEggGui = getappdata(0,'hFluEggGui');
 HECRAS_data=getappdata(hFluEggGui,'inputdata');
 
+%ZZ
+SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
+SpawningTime=strjoin(SpawningTime);
+SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
+%ZZ-end
 
 endSimtime=[get(handles.edit_Ending_Date,'String'),' ',get(hObject,'String')];
 endSimtime=strjoin(endSimtime);
@@ -589,7 +594,10 @@ date=arrayfun(@(x) datenum(x.Date,'ddmmyyyy HHMM'), HECRAS_data.Profiles);
 %datestr(endSimtime); For debuggin
 EndSimTimeIndex=find(date>=endSimtime,1,'first');
 
-Totaltime=24*(endSimtime-HECRAS_data.SpawningTime);
+%ZZ: HECRAS_data.SpawningTime might be changed manually in 4. Simulation setup/Starting date and time 
+% Totaltime=24*(endSimtime-HECRAS_data.SpawningTime);
+Totaltime=24*(endSimtime-SpawningTime);
+
 %If end simulation time is greater than hydraulic data records
 if date(end)<endSimtime
     ed = errordlg('The simulated time in HEC-RAS is not long enough to support FluEgg simulations, Please extend your simulated period in HEC-RAS. ','Error');
@@ -619,8 +627,23 @@ end
 function Totaltime_Callback(hObject, eventdata, handles)
 hFluEggGui = getappdata(0,'hFluEggGui');
 HECRAS_data=getappdata(hFluEggGui, 'inputdata');
+
+%ZZ
+SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
+SpawningTime=strjoin(SpawningTime);
+SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
+%ZZ-end
+
 try
-    endSimtime=HECRAS_data.SpawningTime+str2double(get(handles.Totaltime,'String'))/24;
+    %ZZ: HECRAS_data.SpawningTime might be changed manually in 4. Simulation setup/Starting date and time 
+    %endSimtime=HECRAS_data.SpawningTime+str2double(get(handles.Totaltime,'String'))/24;
+    
+    if strcmp(get(handles.Inverse_modeling,'Checked'),'off') %ZZ: if NOT inverse modeling   
+        endSimtime=SpawningTime+str2double(get(handles.Totaltime,'String'))/24;
+    else %ZZ: if inverse modeling, endSimtime is prior to startSimtime. Not useful for computation but only for GUI
+        endSimtime=SpawningTime-str2double(get(handles.Totaltime,'String'))/24;
+    end
+        
     endSimtime=datestr(endSimtime,'ddmmmyyyy HHMM');
     dateandtime = strsplit(char(endSimtime),' ');
     set(handles.edit_Ending_Date,'String',dateandtime(1));
