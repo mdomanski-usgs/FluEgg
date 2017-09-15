@@ -676,6 +676,10 @@ elseif strcmp(    what,'Import TS')
           'Max'     , 2,...
           'FontSize', 12,...
           'BackgroundColor', 'white');
+%ZZ-Start:
+elseif strcmp(    what,'Continue')  %ZZ: Import_data_button is 'Continue' after spawning time is set up
+    [date_axis, Yylabel] = plotProfiles(handles); %Yylabel has to be defined for next steps.
+%ZZ-end
 end
 %% Format plot
 h = handles.Plot_Hydrograph;
