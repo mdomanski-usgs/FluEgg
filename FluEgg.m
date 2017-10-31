@@ -258,6 +258,30 @@ if strcmp(Batchmode,'on')
     
     for k=1:NumSim
         handles.userdata.RunNumber = k;
+        
+%%ZZ If there is a batch input file, use information from the file
+        if size(inputdata.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
+            handles.userdata.Num_Eggs=inputdata.Batch.Batchinputfile(k,5);
+            handles.userdata.Xi=inputdata.Batch.Batchinputfile(k,2);
+            handles.userdata.Zi=inputdata.Batch.Batchinputfile(k,4);
+            handles.userdata.Totaltime=inputdata.Batch.Batchinputfile(k,7);
+            
+            if inputdata.Batch.Batchinputfile(k,3) > 0 % If Yi is known. 
+                handles.userdata.Yi=inputdata.Batch.Batchinputfile(k,3);
+            else % Otherwise, use the middle of the cross section
+                try
+                    HECRAS_time_index=inputdata.HECRASspawiningTimeIndex; %if HEC-RAS unsteady
+                catch
+                    HECRAS_time_index=1; %if steady state using .xls.
+                end
+                Riverinputfile=inputdata.Profiles(HECRAS_time_index).Riverinputfile;
+                C = find(handles.userdata.Xi<single(Riverinputfile(:,2))*1000,1,'first');
+                Width = abs(Riverinputfile(:,4)./(Riverinputfile(:,5).*Riverinputfile(:,3))); %Q/(Vmag*Depth)
+                handles.userdata.Yi=floor(Width(C)*100/2)/100;
+            end
+        end
+%%===========================================================================
+        
         if k==1
             [minDt,CheckDt,Exit] = FluEgggui(hObject, eventdata,handles,CheckDt);
             %% Checking Dt
@@ -569,6 +593,11 @@ function edit_Ending_time_Callback(hObject, eventdata, handles)
 hFluEggGui = getappdata(0,'hFluEggGui');
 HECRAS_data=getappdata(hFluEggGui,'inputdata');
 
+%ZZ
+SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
+SpawningTime=strjoin(SpawningTime);
+SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
+%ZZ-end
 
 endSimtime=[get(handles.edit_Ending_Date,'String'),' ',get(hObject,'String')];
 endSimtime=strjoin(endSimtime);
@@ -577,7 +606,10 @@ date=arrayfun(@(x) datenum(x.Date,'ddmmyyyy HHMM'), HECRAS_data.Profiles);
 %datestr(endSimtime); For debuggin
 EndSimTimeIndex=find(date>=endSimtime,1,'first');
 
-Totaltime=24*(endSimtime-HECRAS_data.SpawningTime);
+%ZZ: HECRAS_data.SpawningTime might be changed manually in 4. Simulation setup/Starting date and time 
+% Totaltime=24*(endSimtime-HECRAS_data.SpawningTime);
+Totaltime=24*(endSimtime-SpawningTime);
+
 %If end simulation time is greater than hydraulic data records
 if date(end)<endSimtime
     ed = errordlg('The simulated time in HEC-RAS is not long enough to support FluEgg simulations, Please extend your simulated period in HEC-RAS. ','Error');
@@ -607,8 +639,23 @@ end
 function Totaltime_Callback(hObject, eventdata, handles)
 hFluEggGui = getappdata(0,'hFluEggGui');
 HECRAS_data=getappdata(hFluEggGui, 'inputdata');
+
+%ZZ
+SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
+SpawningTime=strjoin(SpawningTime);
+SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
+%ZZ-end
+
 try
-    endSimtime=HECRAS_data.SpawningTime+str2double(get(handles.Totaltime,'String'))/24;
+    %ZZ: HECRAS_data.SpawningTime might be changed manually in 4. Simulation setup/Starting date and time 
+    %endSimtime=HECRAS_data.SpawningTime+str2double(get(handles.Totaltime,'String'))/24;
+    
+    if strcmp(get(handles.Inverse_modeling,'Checked'),'off') %ZZ: if NOT inverse modeling   
+        endSimtime=SpawningTime+str2double(get(handles.Totaltime,'String'))/24;
+    else %ZZ: if inverse modeling, endSimtime is prior to startSimtime. Not useful for computation but only for GUI
+        endSimtime=SpawningTime-str2double(get(handles.Totaltime,'String'))/24;
+    end
+        
     endSimtime=datestr(endSimtime,'ddmmmyyyy HHMM');
     dateandtime = strsplit(char(endSimtime),' ');
     set(handles.edit_Ending_Date,'String',dateandtime(1));

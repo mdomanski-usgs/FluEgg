@@ -22,7 +22,7 @@ function varargout = batchgui(varargin)
 
 % Edit the above text to modify the response to help batchgui
 
-% Last Modified by GUIDE v2.5 28-Feb-2017 10:58:53
+% Last Modified by GUIDE v2.5 25-Apr-2017 18:10:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -92,4 +92,105 @@ inputdata.Batch.NumSim=str2double(get(handles.NumSim,'String'));
 inputdata.Batch.continuee=1;
 setappdata(hFluEggGui,'inputdata',inputdata)
 close(handles.figure1)%Close GUI
+end
+
+function BatchrunButton_CreateFcn(hObject, eventdata, handles)
+end
+
+%ZZ --- Executes on button press in "Load Batch Simulation Data".
+function pushbutton3_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+%%::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+hFluEggGui = getappdata(0,'hFluEggGui');
+inputdata = getappdata(hFluEggGui,'inputdata');
+
+[FileName,PathName]=uigetfile({'*.*',  'All Files (*.*)';
+    '*.xls;*.xlsx'     , 'Microsoft Excel Files (*.xls,*.xlsx)'; ...
+    '*.csv'             , 'CSV - comma delimited (*.csv)'; ...
+    '*.txt'             , 'Text (Tab Delimited (*.txt)'}, ...
+    'Select file to import');
+strFilename = fullfile(PathName,FileName);
+
+if PathName == 0 %if the user pressed cancelled, then we exit this callback
+    return
+else
+    if FileName ~= 0
+        % Load Batch run input file which includes information of multiple
+        % eggs
+        m = msgbox('Please wait, loading file...','FluEgg');
+        extension=regexp(FileName, '\.', 'split');
+        if (strcmp(extension(end),'xls') == 1 || strcmp(extension(end),'xlsx') == 1)
+            %% If xlsread fails
+            try %Eddited TGB 03/21/14
+                [Batchinputfile, Batchinputfile_hdr] = xlsread(strFilename);
+                close(m);
+            catch
+                close(m);
+                m = msgbox('Unexpected error, please try again','FluEgg error','error');
+                uiwait(m)
+                return
+            end
+            %%
+        elseif strcmp(extension(end),'csv') == 1
+            Batchinputfile = importdata(strFilename);
+            Batchinputfile_hdr = Batchinputfile.textdata;
+            Batchinputfile = Batchinputfile.data;
+            close(m);
+        elseif strcmp(extension(end),'txt') == 1
+            Batchinputfile = importdata(strFilename);
+            if  isstruct(Batchinputfile)
+                Batchinputfile_hdr = Batchinputfile.textdata;
+                Batchinputfile_hdr = regexp(Batchinputfile_hdr, '\t', 'split');
+                Batchinputfile_hdr = Batchinputfile_hdr{1,1};
+                Batchinputfile = Batchinputfile.data;
+            else
+                ed = errordlg('Please fill all the data required in the Batch input file, and load the file again','Error');
+                set(ed, 'WindowStyle', 'modal');
+                uiwait(ed);
+                close(m)
+                return
+            end
+            close(m)
+            %%
+        else
+            msgbox('The file extension is unrecognized, please select another file','FluEgg Error','Error');
+            return
+        end %Checking file extension
+        try
+            handles.userdata.Batchinputfile = Batchinputfile(:,1:8);
+            handles.userdata.Batchinputfile_hdr = Batchinputfile_hdr(:,1:8);
+            if size(Batchinputfile_hdr) ~= [1 8]
+                ed = msgbox('Incorrect Batch input file, please select another file','FluEgg Error','Error');
+                set(ed, 'WindowStyle', 'modal');
+                uiwait(ed);
+                return
+            elseif sum(strcmp(Batchinputfile_hdr(:,1:8),{'Egg_ID','StartingX_m','StartingY_m','StartingZ_m','Num_Eggs','StartingTime','SimulationTime_hr','Temp_C'}))<8
+                ed = msgbox('Incorrect Batch input file, please select another file','FluEgg Error','Error');
+                set(ed, 'WindowStyle', 'modal');
+                uiwait(ed);
+                return
+            end
+            set(handles.Batchinputfile,'Data',handles.userdata.Batchinputfile(:,1:8));
+            Batchin_DataPlot(handles);
+        catch
+            if size(Batchinputfile,2) ~= 8
+                ed = errordlg('Please fill all the data required in the Batch input file, and load the file again','Error');
+                set(ed, 'WindowStyle', 'modal');
+                uiwait(ed);
+                return
+            end
+        end %try
+        set(handles.NumSim,'String',size(Batchinputfile,1)); %ZZ set total number of simulation according to input file
+        inputdata.Batch.NumSim=str2double(get(handles.NumSim,'String'));
+    end
+end %if user pres cancel
+%%
+%% Save data in hFluEggGui
+inputdata.Batch.Batchinputfile=Batchinputfile;
+inputdata.Batch.Batchinputfile_hdr=Batchinputfile_hdr;
+setappdata(hFluEggGui, 'inputdata',inputdata);
+
+guidata(hObject, handles);% Update handles structure
 end

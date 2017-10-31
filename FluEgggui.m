@@ -35,6 +35,7 @@ switch Inv_mod_status
     case 'on' % If inverse modeling is activated
         Inv_mod=-1;
         %% Inverse modeling [TG}
+        if strcmp(get(handles.Batch,'Checked'),'off') %ZZ avoid warning message in batch simulations
         choice = questdlg('You are about to start an inverse simulation of drifting eggs, are you sure you want to continue?'...
             ,'Warning','Yes','No','Yes');
         switch choice
@@ -47,6 +48,7 @@ switch Inv_mod_status
                 pause(4)
                  delete(h)
                 return
+        end
         end
 end
 
@@ -68,9 +70,15 @@ alivemodel = 1;  %if alivemodel=1 the eggs would not die
 Exit = 0; %If we exit the code
 % =======================================================================
 
+%%ZZ EggID for batch simulation
+if strcmp(get(handles.Batch,'Checked'),'on')
+EggID = handles.userdata.RunNumber;
+end
+
 %% Imports input data
 
 Totaltime = single(handles.userdata.Totaltime*3600);%seconds
+
 %% HECRAS input
 try
     
@@ -78,7 +86,7 @@ try
     HECRAS_data=getappdata(hFluEggGui,'inputdata');
     HECRAS_time_index=HECRAS_data.HECRASspawiningTimeIndex;%HEC-RAS spawning time index, different from
     %spawning time. It is the same or previous date with hydraulic data.
-    
+
     date=arrayfun(@(x) datenum(x.Date,'ddmmyyyy HHMM'), HECRAS_data.Profiles);
     %Calculate Hydraulic Time step-->From HEC-RAS
     HDt=datestr(date(2)-date(1),'dd HH MM SS');
@@ -94,11 +102,16 @@ try
     setappdata(hFluEggGui,'inputdata',HECRAS_data)
     
     % Spawning Start Time
-    %Spawning date and time in number
-    SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
-    SpawningTime=strjoin(SpawningTime);
-    SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
-
+    %Spawning date and time in number  
+    %%ZZ batch simulation
+    if size(HECRAS_data.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
+        SpawningTime = HECRAS_data.Batch.Batchinputfile(EggID,6); %Read from a batch input file
+    else
+        SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
+        SpawningTime=strjoin(SpawningTime);
+        SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
+    end
+    
     %HEC-RAS date and time when spawning occours:
     HECRAS_StartingTime=date(HECRAS_time_index);%in days
     
@@ -953,8 +966,18 @@ Jump;
         Vlat = Riverinputfile(:,6);           %m/s
         Vvert = Riverinputfile(:,7);          %m/s
         Ustar = Riverinputfile(:,8);          %m/s
-        Temp = Riverinputfile(:,9);          %C
         
+        %%ZZ batch simulation
+        if strcmp(get(handles.Batch,'Checked'),'on')
+        if size(HECRAS_data.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
+            %Read from a batch input file, temperature is constant in time
+            %and space for one egg but differ between different simulated eggs in
+            %batch simulation
+            Temp = ones(size(Riverinputfile(:,9)))*HECRAS_data.Batch.Batchinputfile(EggID,8); 
+        end
+        else
+            Temp = Riverinputfile(:,9);          %C
+        end
         %==========================================================================
         %% Calculations
         Width = abs(Q./(Vmag.*Depth));               %m
