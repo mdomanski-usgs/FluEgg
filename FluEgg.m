@@ -640,15 +640,15 @@ function Totaltime_Callback(hObject, eventdata, handles)
 hFluEggGui = getappdata(0,'hFluEggGui');
 HECRAS_data=getappdata(hFluEggGui, 'inputdata');
 
-%ZZ
-SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
-SpawningTime=strjoin(SpawningTime);
-SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
-%ZZ-end
-
 try
     %ZZ: HECRAS_data.SpawningTime might be changed manually in 4. Simulation setup/Starting date and time 
     %endSimtime=HECRAS_data.SpawningTime+str2double(get(handles.Totaltime,'String'))/24;
+
+    %ZZ
+    SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
+    SpawningTime=strjoin(SpawningTime);
+    SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
+    %ZZ-end
     
     if strcmp(get(handles.Inverse_modeling,'Checked'),'off') %ZZ: if NOT inverse modeling   
         endSimtime=SpawningTime+str2double(get(handles.Totaltime,'String'))/24;
