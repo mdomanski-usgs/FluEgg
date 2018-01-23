@@ -164,20 +164,16 @@ function create_regular_grid_centerline_button_Callback(hObject, ...
         lon = flipud(lon);
     end
     
-    [kml_x, kml_y, kml_utmzone] = deg2utm(lat, lon);
+    % convert lat, lon to UTM x, y and get the most common UTM zone
+    [kml_x, kml_y, kml_utmzone] = ll2utm(lat, lon);
+    mode_utmzone = mode(kml_utmzone);
     
-    % vectors to store centerline with constant ds
-    constant_ds_x = [];
-    constant_ds_y = [];
-    constant_ds_utmzone = [];
-    
-    % Find if we are in the same utm zone
-    utmzoneCell = cellstr(kml_utmzone);
+    % if there are any UTM zones that aren't equal to the most common zone,
+    % re-project into the most common zone
+    if any(mode_utmzone ~= kml_utmzone)
+        [kml_x, kml_y] = ll2utm(lat, lon, 'wgs84', mode_utmzone);
+    end
 
-    % find the indices where the zones change
-    ChangeInZoneID_in = find(~strcmp(utmzoneCell(1:end-1), ...
-        utmzoneCell(2:end)));
-    
     prompt = {['Enter the window size for smoothing (# of points along '...
         'centerline, must be odd): '], 'Enter the polynomial degree for'};
     name = 'Cubic spline interpolation of centerline.';
@@ -187,39 +183,11 @@ function create_regular_grid_centerline_button_Callback(hObject, ...
     window_size = str2num(ans1{1});
     poly_degree = str2num(ans1{2});
 
-    % if we have a change in UTM zone
-    if ~isempty(ChangeInZoneID_in) 
-        
-        % Create x,y for each UTM zone
-        
-        utm_zone_indices = [0; ChangeInZoneID_in; length(kml_x)];
-
-        % for each zone
-        for i=1:length(utm_zone_indices)-1
-            
-            Init_id = utm_zone_indices(i)+1;
-            End_id = utm_zone_indices(i+1);
-           
-            % get x, y coordinates with constant ds spacing
-            [xout, yout] = create_x_y_constant_ds(kml_x(Init_id:End_id), ...
-                kml_y(Init_id:End_id), window_size, poly_degree, handles);
-            
-            % add x, y coordinates and utm zones to cumulative arrays
-            constant_ds_x = [constant_ds_x; xout];
-            constant_ds_y = [constant_ds_y; yout];
-            constant_ds_utmzone = [constant_ds_utmzone; ...
-                repmat(kml_utmzone(Init_id,:), length(xout), 1)];
-            
-        end
-        
-    else
-        [constant_ds_x, constant_ds_y] = create_x_y_constant_ds(...
-            kml_x, kml_y, window_size, poly_degree, handles);
-        constant_ds_utmzone = repmat(kml_utmzone(1,:), length(constant_ds_x),1);
-    end
+    [constant_ds_x, constant_ds_y] = create_x_y_constant_ds(...
+        kml_x, kml_y, window_size, poly_degree, handles);
     
-    [centerline_lat_out, centerline_lon_out] = utm2deg(...
-        constant_ds_x, constant_ds_y, constant_ds_utmzone);
+    [centerline_lat_out, centerline_lon_out] = utm2ll(...
+        constant_ds_x, constant_ds_y, mode_utmzone);
     
     handleResults = getappdata(0,'handleResults');
     pathname = getappdata(handleResults,'pathname');
@@ -233,7 +201,7 @@ function create_regular_grid_centerline_button_Callback(hObject, ...
     
     handles.x = constant_ds_x;
     handles.y = constant_ds_y;
-    handles.utmzone = constant_ds_utmzone;
+    handles.utmzone = repmat(mode_utmzone(1,:), length(constant_ds_x),1);
     
     % Update handles structure
     guidata(hObject, handles);
@@ -289,17 +257,11 @@ function Create_kml_button_Callback(hObject, eventdata, handles)
     [spawning_location_x, spawning_location_y] = sn2xy(...
         fractional_spawning_distance, 0, ...
         stream_coordinate_x, stream_coordinate_y);
-    
-    % find UTM zone
-    utmzone = handles.utmzone;
-    distanceToSpawning = sqrt( (stream_coordinate_x-spawning_location_x).^2 ...
-        + (stream_coordinate_y-spawning_location_y).^2 );
-    
-    [~, spawning_cell_index] = min(distanceToSpawning);
-    spawning_utm_zone = utmzone(spawning_cell_index, :);
+      
+    spawning_utm_zone = handles.utmzone(1);
     
     % map spawning location to lat, lon coordiates
-    [Lat_susp, Lon_susp] = utm2deg(spawning_location_x, spawning_location_y, ...
+    [Lat_susp, Lon_susp] = utm2ll(spawning_location_x, spawning_location_y, ...
         spawning_utm_zone);
     
     Spawning_Location = [Lat_susp Lon_susp];
@@ -420,7 +382,7 @@ function eggs_at_hatching(handles,Spawning_Location)
     s = Xsusp/str2double(get(handles.L,'String'));
     %%
     [coordX, coordY, utmzone_out] = UTMVector_Out(utmzone, x, y, s, str2double(get(handles.L,'String')));
-    [Lat_susp, Lon_susp]  = utm2deg(coordX, coordY, utmzone_out);
+    [Lat_susp, Lon_susp]  = utm2ll(coordX, coordY, utmzone_out);
     %% Eggs near the bottom
     if length(Xbot) > 5000
         Xbot = [min(Xbot); downsample(Xbot,round(length(Xbot)/5000)); max(Xbot)];
@@ -431,7 +393,7 @@ function eggs_at_hatching(handles,Spawning_Location)
     end
     s = Xbot/str2double(get(handles.L,'String'));
     [coordX,coordY,utmzone_out] = UTMVector_Out(utmzone, x, y, s, str2double(get(handles.L,'String')));
-    [Lat_bot, Lon_bot]  = utm2deg(coordX, coordY, utmzone_out);
+    [Lat_bot, Lon_bot]  = utm2ll(coordX, coordY, utmzone_out);
     %%
     %kmlwritepoint([pathname get(handles.outputfilename,'String') '.kml'],lat_out,lon_out,'icon','http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png','Color','y','Name',repmat(' ',length(s),1),'Iconscale',0.4)
     GEplot_3D([pathname get(handles.outputfilename,'String') ' at hatching'],Lat_susp,Lon_susp,zeros(length(Lat_susp),1),'oy',Lat_bot,Lon_bot,zeros(length(Lat_bot),1),'om',[],Spawning_Location,[],'MarkerSize',0.4);
@@ -457,11 +419,12 @@ TimeIndex=find(time>=round(T2_Gas_bladder-(time(2)-time(1))*3600),1,'last');Time
 X_at_Gas_Bladder(:,1)=X(TimeIndex,alive(TimeIndex,:)==1);%in m
 s=X_at_Gas_Bladder/str2double(get(handles.L,'String'));
 [coordX,coordY,utmzone_out]=UTMVector_Out(utmzone,x,y,s,str2double(get(handles.L,'String')));
-[Lat,Lon] =utm2deg(coordX,coordY,utmzone_out);
+[Lat,Lon] =utm2ll(coordX,coordY,utmzone_out);
 %%
 %kmlwritepoint([pathname get(handles.outputfilename,'String') '.kml'],lat_out,lon_out,'icon','http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png','Color','y','Name',repmat(' ',length(s),1),'Iconscale',0.4)
 GEplot_3D([pathname get(handles.outputfilename,'String') '_Gas_bladder_larvae'],Lat,Lon,zeros(length(Lat),1),'oc',[],[],[],'om',[],Spawning_Location,[],'MarkerSize',0.4);
 end
+
 
 function Distribution_at_hatching(handles,Spawning_Location,bin,scale_factor)
 %% Load data
@@ -521,7 +484,7 @@ id=find(bids>=min(Xsusp));id=id(1)-1;
 id_end=find(bids>=max(Xsusp));id_end=id_end(1);
 s=bids(id:id_end)/str2double(get(handles.L,'String'));
 [coordX,coordY,utmzone_out]=UTMVector_Out(utmzone,x,y,s,str2double(get(handles.L,'String')));
-[Lat_susp,Lon_susp] = utm2deg(coordX,coordY,utmzone_out);
+[Lat_susp,Lon_susp] = utm2ll(coordX,coordY,utmzone_out);
 Nsusp=Nsusp(id:id_end)*100/size(X_at_hatching,1);
 %% Near the bottom
 Nbot=histc(Xbot,edges);Nbot=Nbot(1:end-1);%here we dont include numbers greater than the max edge
@@ -529,7 +492,7 @@ id=find(bids>min(Xbot));id=id(1)-1;
 id_end=find(bids>=max(Xbot));id_end=id_end(1);
 s=bids(id:id_end)/str2double(get(handles.L,'String'));
 [coordX,coordY,utmzone_out]=UTMVector_Out(utmzone,x,y,s,str2double(get(handles.L,'String')));
-[Lat_bot,Lon_bot] = utm2deg(coordX,coordY,utmzone_out);
+[Lat_bot,Lon_bot] = utm2ll(coordX,coordY,utmzone_out);
 Nbot=Nbot(id:id_end)*100/size(X_at_hatching,1);
 %% Percentage of eggs at risk of hatching
 ERH=sum(Nsusp);
@@ -539,84 +502,17 @@ GEplot_3D([pathname get(handles.outputfilename,'String') ' distribution at hatch
 
 end
 
-function [coordX,coordY,utmzone_out]=UTMVector_Out(utmzone,x,y,s,L);
-%% Preallocate vectores to storage centerline with constant ds
-coordX=[];coordY=[];utmzone_out=[];
 
-%% Find if we are in the same utm zone
-utmzoneCell=cellstr(utmzone);
-ChangeInZoneID_in=find(strcmp(utmzoneCell(1:end-1),utmzoneCell(2:end))==0);
-Distance_s_ToChangeZone=sqrt((x(1:ChangeInZoneID_in-1)-x(2:ChangeInZoneID_in)).^2+(y(1:ChangeInZoneID_in-1)-y(2:ChangeInZoneID_in)).^2);
-Distance_s_ToChangeZone=sum(Distance_s_ToChangeZone)/L;
+function [coordX, coordY, utmzone_out] = UTMVector_Out(utmzone, x, y, s, L)
 
-%% Convert sn to xy and then to lat long
-
-if ~isempty(ChangeInZoneID_in) %we have a change in UTM zone
-    %% Assume 2 changing zones
-    if max(s)>Distance_s_ToChangeZone %if eggs passed the changing zone
-        % Create x,y for each UTM zone
-        Init_id=1; 
-        Init_id_s=1;
-        End_id=ChangeInZoneID_in(1);
-        End_id_s=find(s>Distance_s_ToChangeZone,1,'first');
-        for i=1:length(ChangeInZoneID_in)+1
-            if i==length(ChangeInZoneID_in)+1
-                Init_id=End_id+1;
-                End_id=length(x);
-                Init_id_s= End_id_s+1;
-                End_id_s=length(s);
-            end
-            [coordX_out,coordY_out] = sn2xy(s(Init_id_s: End_id_s),zeros(length(s( Init_id_s: End_id_s)),1),x(Init_id:End_id),y(Init_id:End_id));
-            coordX=[coordX;coordX_out];
-            coordY=[coordY;coordY_out];
-            utmzone_out=[utmzone_out;repmat(utmzone(Init_id,:),length(coordX_out),1)];
-            if i<length(ChangeInZoneID_in)
-                Init_id=End_id+1;
-                End_id=ChangeInZoneID_in(i+1);
-            end
-        end %for
-    else
-        [coordX,coordY] = sn2xy(s,zeros(length(s),1),x(1:ChangeInZoneID_in(1)),y(1:ChangeInZoneID_in(1)));
-        utmzone_out=repmat(utmzone(1,:),length(coordX),1);
-    end
-else %If there are not change in zones
+%     else %If there are not change in zones
     [coordX,coordY] = sn2xy(s,zeros(length(s),1),x,y);
     utmzone_out=repmat(utmzone(1,:),length(coordX),1);
-end  % End if there are changing zones
-
-% utmzone_out=[];
-% utmzoneCell=cellstr(utmzone);
-% ChangeInZoneID_in=find(strcmp(utmzoneCell(1:end-1),utmzoneCell(2:end))==0);
-% if ~isempty(ChangeInZoneID_in) %we have a change in UTM zone
-%     % Create utmzone_out for changing UTM zones
-%     Init_id=1;
-%     for i=1:length(ChangeInZoneID_in)+1
-%         %Find whether the X and Y coordinates are within a zone of changing
-%         %UTM
-%         if i<length(ChangeInZoneID_in)+1
-%             distanceToChangeInZone=sqrt((x(ChangeInZoneID_in)-coordX).^2+(y(ChangeInZoneID_in)-coordY).^2);
-%         end
-%         if min(distanceToChangeInZone)<max(diff(x)./diff(y))
-%             if i==length(ChangeInZoneID_in)+1
-%                 End_id=length(coordX);
-%             else
-%                 End_id=find(distanceToChangeInZone==min(distanceToChangeInZone));
-%
-%             end
-%             if i==1
-%             utmzone_out=[utmzone_out;repmat(utmzone(1,:),End_id-Init_id+1,1)];
-%             else
-%                 utmzone_out=[utmzone_out;repmat(utmzone(ChangeInZoneID_in(i-1)+1,:),End_id-Init_id+1,1)];
-%             end
-%             Init_id=End_id+1;
-%         else
-%             utmzone_out=repmat(utmzoneCell(1,:),length(coordX),1);
-%         end
-%     end
-% end
-% utmzone_out=char(utmzone_out);
+%     end  % End if there are changing zones
 
 end%UTMVector_Out function
+
+
 function  Distribution_at_Gas_Bladder(handles,Spawning_Location,bin,scale_factor)
 %% Load data
 handleResults=getappdata(0,'handleResults');
@@ -639,7 +535,7 @@ id=find(bids>min(X(end,alive(end,:)==1)),1,'first');
 id_end=find(bids>=max(X(end,alive(end,:)==1)));id_end=id_end(1)-1;
 s=bids(id:id_end)/str2double(get(handles.L,'String'));
 [coordX,coordY,utmzone_out]=UTMVector_Out(utmzone,x,y,s,str2double(get(handles.L,'String')));
-[Lat_Larvae,Lon_larvae] = utm2deg(coordX,coordY,utmzone_out);
+[Lat_Larvae,Lon_larvae] = utm2ll(coordX,coordY,utmzone_out);
 Gass_bladder_Larvae=Gass_bladder_Larvae(id:id_end)*100/size(X(end,alive(end,:)==1),2);
 %% Generating the GEplot_3D
 GEplot_3D([pathname get(handles.outputfilename,'String') ' distribution of larvae at gas bladder inflation stage'],Lat_Larvae,Lon_larvae,Gass_bladder_Larvae*scale_factor,'-m',[],[],[],'-c',[],Spawning_Location,T2_Gas_bladder,'LineWidth',3);
