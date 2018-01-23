@@ -1,4 +1,4 @@
-function [out,x_der1,y_der1]=pcscurvature(X,Y,in2)
+function [out,x_der1,y_der1]=pcscurvature(X,Y,in2, window_size, poly_degree)
 % PARAMETRIC CUBIC SPLINE INTERPOLATION AND ARC-LENGTH PARAMETERIZATION OF
 % DIGITIZED DATA POINTS OF MEANDERING RIVERS - CURVATURE CALCULATION
 %
@@ -19,12 +19,12 @@ ins1 = [X,Y];
 % disp(['Enter the polynomial degree for'])
 % poly_degree = input('smoothing (must be smaller than window size, between 3-5 works best): '); % specifies the polynomial degree used in the smooting
 
-prompt={'Enter the window size for smoothing (# of points along centerline, must be odd): ','Enter the polynomial degree for'};
-name='Cubic spline interpolation of centerline.';
-numlines=1;
-defaultanswer = {'5','3'};
-ans1 = inputdlg(prompt,name,numlines,defaultanswer);
-window_size = str2num(ans1{1});  poly_degree = str2num(ans1{2});
+% prompt={'Enter the window size for smoothing (# of points along centerline, must be odd): ','Enter the polynomial degree for'};
+% name='Cubic spline interpolation of centerline.';
+% numlines=1;
+% defaultanswer = {'5','3'};
+% ans1 = inputdlg(prompt,name,numlines,defaultanswer);
+% window_size = str2num(ans1{1});  poly_degree = str2num(ans1{2});
 % window_size = 6;
 % poly_degree = 3;
 

@@ -1,8 +1,8 @@
 %% FluEgg main function: FluEgggui.m
 %%:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::%
-%%                       MAIN FUNCTION                                    %
+%                        MAIN FUNCTION                                    %
 %                                                                         %
-%%             FLUVIAL EGG DRIFT SIMULATOR (FluEgg)                       %
+%              FLUVIAL EGG DRIFT SIMULATOR (FluEgg)                       %
 %:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::%
 % =========================================================================
 % ------------------------------------------------------------------------%
@@ -13,7 +13,7 @@
 %                                                                         %
 % ------------------------------------------------------------------------%
 %   Created by      : Tatiana Garcia                                      %
-%   Last Modified   : July 29, 2016                                        %
+%   Last Modified   : July 29, 2016                                       %
 % ------------------------------------------------------------------------%
 %                                                                         %
 % Copyright 2016 Tatiana Garcia                                           %
@@ -26,15 +26,15 @@
 
 function [minDt,CheckDt,Exit]=FluEgggui(~, ~,handles,CheckDt)
 
-%% Are we doing inverse modeling? TG
+% Are we doing inverse modeling? TG
 Inv_mod_status=get(handles.Inverse_modeling,'Checked');
 switch Inv_mod_status
     %======================================================================
     case 'off' %If forward modeling
-        Inv_mod=1;
+        Inv_mod = 1;
     case 'on' % If inverse modeling is activated
-        Inv_mod=-1;
-        %% Inverse modeling [TG}
+        Inv_mod = -1;
+        % Inverse modeling [TG}
         choice = questdlg('You are about to start an inverse simulation of drifting eggs, are you sure you want to continue?'...
             ,'Warning','Yes','No','Yes');
         switch choice
@@ -50,51 +50,56 @@ switch Inv_mod_status
         end
 end
 
-%% Iniciate Waitbar
-h = waitbar(0,'Initializing variables...','Name','Eggs drifting...',...
+% Iniciate Waitbar
+h = waitbar(0, 'Initializing variables...', 'Name', 'Eggs drifting...',...
     'CreateCancelBtn',...
     'setappdata(gcbf,''canceling'',1)');
 setappdata(h,'canceling',0)
 if getappdata(h,'canceling')
     delete(h);
-    Exit=1;
+    Exit = 1;
     return;
 end
 
-%% Switch to turn on or off mortality model
+% Switch to turn on or off mortality model
 %Right now we are assuming eggs don't die
 % The mortality model is under development
 alivemodel = 1;  %if alivemodel=1 the eggs would not die
 Exit = 0; %If we exit the code
 % =======================================================================
 
-%% Imports input data
+% Imports input data
 
 Totaltime = single(handles.userdata.Totaltime*3600);%seconds
-%% HECRAS input
+% HECRAS input
 try
     
     hFluEggGui = getappdata(0,'hFluEggGui');
     HECRAS_data=getappdata(hFluEggGui,'inputdata');
-    HECRAS_time_index=HECRAS_data.HECRASspawiningTimeIndex;%HEC-RAS spawning time index, different from
-    %spawning time. It is the same or previous date with hydraulic data.
+    % HEC-RAS spawning time index, different from spawning time. It is the 
+    % same or previous date with hydraulic data.
+    HECRAS_time_index=HECRAS_data.HECRASspawiningTimeIndex;
     
     date=arrayfun(@(x) datenum(x.Date,'ddmmyyyy HHMM'), HECRAS_data.Profiles);
+    
     %Calculate Hydraulic Time step-->From HEC-RAS
     HDt=datestr(date(2)-date(1),'dd HH MM SS');
     HDt=str2double(strsplit(HDt,' '));
-    HDt=(HDt(1)*24)+(HDt(2))+(HDt(3)/60)+(HDt(4)/3600);%Hydraulic Time step in hours
-    HDt=HDt*3600;%Hydraulic Time step in seconds
-    %HECRAS_data.HDt_seconds=HDt;
     
+    %Hydraulic Time step in hours
+    HDt=(HDt(1)*24)+(HDt(2))+(HDt(3)/60)+(HDt(4)/3600);
+    
+    %Hydraulic Time step in seconds
+    HDt=HDt*3600;
+        
     %HEC-RAS time=0 is the spawning time
-    HECRAS_time=0:HDt:Totaltime;
+    HECRAS_time = 0:HDt:Totaltime;
     HECRAS_time_counter=1;
     HECRAS_data.HECRAS_time_sec=HECRAS_time;
     setappdata(hFluEggGui,'inputdata',HECRAS_data)
     
     % Spawning Start Time
-    %Spawning date and time in number
+    % Spawning date and time in number
     SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
     SpawningTime=strjoin(SpawningTime);
     SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
@@ -111,11 +116,17 @@ HECRAS_time_index=1;
 end
       
 %Cell dependant variables
-[CumlDistance,Depth,Q,~,Vlat,Vvert,Ustar,Temp,Width,VX,ks]=Create_Update_Hydraulic_and_QW_Variables(HECRAS_time_index);
+[CumlDistance, Depth, Q, ~, Vlat, Vvert, Ustar, Temp, Width, VX, ks] = ...
+    Create_Update_Hydraulic_and_QW_Variables(HECRAS_time_index);
 % =======================================================================
 % Gets input data from main GUI
-Eggs = single(handles.userdata.Num_Eggs);%make sure you can take the cubic root of it.(e.g 27,64,125)
-Xi = single(handles.userdata.Xi);Yi=single(handles.userdata.Yi);Zi=single(handles.userdata.Zi);%Spawning location in m
+% make sure you can take the cubic root of it.(e.g 27,64,125)
+Eggs = single(handles.userdata.Num_Eggs);
+
+%Spawning location in m
+Xi = single(handles.userdata.Xi);
+Yi = single(handles.userdata.Yi);
+Zi = single(handles.userdata.Zi);
 % =======================================================================
 
 % Species
@@ -128,12 +139,13 @@ else
 end
 % =======================================================================
 
-%% Time
+% Time
 % If Simulation time is greater than time to reach a given stage warn the user!!
 % Calculate maximum simulation time.
 
 % Initial cell location
-Initial_Cell = find(CumlDistance*1000>=str2double(get(handles.Xi_input,'String')),1,'first'); % Updated TG May,2015
+% Updated TG May,2015
+Initial_Cell = find(CumlDistance*1000 >= str2double(get(handles.Xi_input, 'String')), 1, 'first'); 
 
 T2_Hatching = HatchingTime(mean(Temp(Initial_Cell:end)),specie);
 Larvaemode = handles.userdata.Larvae;
@@ -209,7 +221,7 @@ t = single(1); %time index
 Steps = single(length(time));
 % =======================================================================
 
-%% pre-allocate memory and intialization of variables
+% pre-allocate memory and intialization of variables
 X = zeros(Steps,Eggs,'single');
 Y = zeros(Steps,Eggs,'single');
 Z = zeros(Steps,Eggs,'single');
@@ -231,9 +243,9 @@ Z(1,:) = Zi;
 KS = Vx;
 Rhoe = Vx;
 alive = ones(Steps,Eggs,'single');
-%% Delete or comment, this is for debug
+% Delete or comment, this is for debug
 %H_unsteady=ones(Steps,Eggs,'single');
-%% In case of mortality model active ======================================
+% In case of mortality model active ======================================
 if alivemodel==0
     %Check int 8 for this case
     Dead_t = cell;
@@ -244,7 +256,7 @@ end
 
 % ========================================================================
 
-%% Eggs biological properties
+% Eggs biological properties
 waitbar(0,h,['Please wait....' 'Running growth model']);
 
 % Determine the selected input data.
@@ -263,7 +275,7 @@ switch str{val};
     case 'Use diameter and egg density time series (Chapman and George (2011, 2014))'
         Tref = 22; %C
         [D,Rhoe_ref] = EggBio;
-        %% Are we doing inverse modeling? TG
+        % Are we doing inverse modeling? TG
         if Inv_mod==-1 %If yes invert the array of D and Rhoe in such a way D decreases with every time step
                        %and Rhoe increases with every time step
             D=D(end:-1:1);
@@ -271,10 +283,10 @@ switch str{val};
         end
 end % Do we use constant diameter and egg density? or do we use grow development time series
 
-%% Calculate water density
+% Calculate water density
 Rhow = density(Temp); %Here we calculate the water density in every cell
 
-%% Get channel geometry and initial data where eggs spawned
+% Get channel geometry and initial data where eggs spawned
 for l=1:Eggs
     C = find(X(t,l)<CumlDistance*1000);cell(l)=C(1);
     Vx(l) = VX(cell(l)); %m/s
@@ -286,24 +298,24 @@ for l=1:Eggs
     T(l) = Temp(cell(l));
     KS(l) = ks(cell(l)); %mm
     Egg_Direction(l) = Q(cell(l))./abs(Q(cell(l))); %positive is downstream movement
-    %% Calculating the SG of eggs
+    % Calculating the SG of eggs
     Rhoe(l) = Rhoe_ref(t)+0.20646*(Tref-Temp(cell(l)));
     SG(l) = Rhoe(l)/Rhow(cell(l));%dimensionless
     %clear Rhoe_ref; clear Rhoe;
     %======================================================================
-    %% Explicit Lagrangian Horizontal Diffusion
+    % Explicit Lagrangian Horizontal Diffusion
     DH(l) = 0.6*H(l)*ustar(l);
-    %% Delete or comment, this is for debug
+    % Delete or comment, this is for debug
     %H_unsteady(1,l)=H(l)';
 end %get hydraulic and water temperature data at egg location
 
-%% Calculating initial fall velocity of eggs
+% Calculating initial fall velocity of eggs
 % Dietrich's
 % All eggs have same properties initially
 Vzpart = single(-Dietrich(D(t),SG(1),T(1))/100);%D should be in mm, vs output is in cm/s, then we convert it to m
 %======================================================================
 
-%% Checking Dt for simulation estability, see Garcia et al., 2013
+% Checking Dt for simulation estability, see Garcia et al., 2013
 if  CheckDt==0
     [minDt,CheckDt] = Checking_Dt;
 end
@@ -314,100 +326,100 @@ if Dt>minDt
 end
 
 Vzpart=Vzpart*ones(Eggs,1,'single'); %Initially all the eggs have the same Vs
-%%
+%
 clear Dmin Vsmax DiamStd VsStd Diam vs C str val
 
-%% Lagrangian movement of eggs (Please reffer to Jump function below)
+% Lagrangian movement of eggs (Please reffer to Jump function below)
 Warning_flag=0;
 Jump;
 %========================================================================
 
-%% This is for mortality model development
+% This is for mortality model development
 % Total_perTime=sum(touch,2);
 % plot(time(2:end),Total_perTime);
 % bar(time(2:end),Total_perTime);
 
-%% Sometimes I use this to delete the waitbar when debbuging TG
+% Sometimes I use this to delete the waitbar when debbuging TG
 % catch
 % set(0,'ShowHiddenHandles','on')
 % delete(get(0,'Children'))
 % return
 % end
-%%=========================================================================
+%=========================================================================
 
-%% Nested Functions
+% Nested Functions
 % Nested functions are used in this function to speed up the simulation
-%%=========================================================================
+%=========================================================================
 %
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-%% 1.  EggBio
+% 1.  EggBio
 % In this function we estimate the eggs growth (diameter and density of eggs)
 % based on Chapman's experiments.
 % The time series of eggs characteristics are standardized at a temperature
 % of to 22C.                                                              %
     function [D,Rhoe_ref]=EggBio()
         
-        %% Initialize variables
+        % Initialize variables
         Dvar = ones(length(time),1);
         Rhoevar=Dvar;
-        %% ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        % ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         if strcmp(specie,'Silver')%if specie=='Silver' :Updated TG March,2015
             Dmin = 1.6980;% mm % Minimum diameter from Chapman's data
             Dmax = 5.6000;% mm    TG 03/2015
             Rhoe_max = 1036.1;% Kg/m^3 at 22C
             Rhoe_min = 998.7680;% Kg/m^3 at 22C TG 03/2015
-            %% Diameter fit
+            % Diameter fit
             a = 4.66;
             b = 2635.9;
             D = a*(1-exp(-time/b));%R2 = 0.87 for silver carp eggs
-            %% Density of eggs fit Standardized to 22C
+            % Density of eggs fit Standardized to 22C
             a = 25.2;
             b = 2259;
             c = 999.3;
             Rhoe_ref = (a*exp(-time/b))+c;%R-square: 0.67 for silver carp eggs
-            %% ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            % ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         elseif strcmp(specie,'Bighead')%:Updated TG March,2015
             Dmin = 1.5970;% mm
             Dmax = 7.1334;% mm
             Rhoe_max = 1040.4;% Kg/m^3 at 22C
             Rhoe_min = 998.5357;% Kg/m^3 at 22C
-            %% Diameter fit
+            % Diameter fit
             a = 5.82;
             b = 3506.7;
             D = a*(1-exp(-time/b));%R2 = 0.82 for BC eggs
-            %% Density of eggs fit Standardized to 22C
+            % Density of eggs fit Standardized to 22C
             a = 30.58;
             b = 1716;c=999.4;Rhoe_ref=(a*exp(-time/b))+c;%R-square: 0.84 for BC eggs
-            %% ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            % ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         else %case Grass Carp : TG March,2015
             Dmin = 1.2250;% mm
             Dmax = 5.6750;% mm
             Rhoe_max = 1.0473e+03;% Kg/m^3 at 22C
             Rhoe_min = 998.4118;% Kg/m^3 at 22C
-            %% Diameter fit
+            % Diameter fit
             a = 4.56;
             b = 2314;
             D = a*(1-exp(-time/b));%R2 = 0.46 for GC eggs
-            %% Density of eggs fit Standardized to 22C
+            % Density of eggs fit Standardized to 22C
             a = 29.09;
             b = 1812;
             c = 999.8;
             Rhoe_ref = (a*exp(-time/b))+c;%R-square: 0.58 for GC eggs
         end
-        %% ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        %% Checking for min D
+        % ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        % Checking for min D
         D(D<Dmin) = Dmin;%min diameter (mm)
         %
-        %% ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        % ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         % Generate density and diameter time series based on cells averaged
         % water temperature, simulation times and fish species
-        %% ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        % ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         for tt=1:length(D) %because the counter of the array starts from 1
 		%The following standard deviation relationships were calculated by fitting
 		% a normal probability density function to increments of Chapman's data gruped by time periods and 
 		%calculating the standard deviation of the data points from the fitted curve.
         %A curve of form a*exp(-t/b)+c was then fit to the time series of standard deviation values as a function of time (LJ February 2017).
-            %% ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            % ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             if strcmp(specie,'Silver')%if specie=='Silver'
                 %% STD
                     %% Diameter
