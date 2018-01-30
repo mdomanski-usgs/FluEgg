@@ -104,9 +104,9 @@ try
     % Spawning Start Time
     %Spawning date and time in number  
     %%ZZ batch simulation
-    if size(HECRAS_data.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
-        SpawningTime = HECRAS_data.Batch.Batchinputfile(EggID,6); %Read from a batch input file
-    else
+	try
+        SpawningTime = HECRAS_data.Batch.Batchinputfile(EggID,6); %If there is a batch input file, read from a batch input file
+    catch
         SpawningTime=[get(handles.edit_Starting_Date,'String'),' ',get(handles.edit_Starting_time,'String')];
         SpawningTime=strjoin(SpawningTime);
         SpawningTime=datenum(SpawningTime,'ddmmyyyy HHMM');
@@ -181,7 +181,6 @@ switch Larvaemode %:Updated TG May,2015
                 case 'Yes'
                     Totaltime=handles.userdata.Max_Sim_Time;
                     set(handles.Totaltime,'String',handles.userdata.Max_Sim_Time);
-                    Totaltime=Totaltime*3600;%Edit 6/1/2017
                 case 'No'
                     minDt=0;
                     delete(h)
@@ -203,7 +202,6 @@ switch Larvaemode %:Updated TG May,2015
                 case 'Yes'
                     Totaltime = handles.userdata.Max_Sim_Time;
                     set(handles.Totaltime,'String',handles.userdata.Max_Sim_Time);
-                    Totaltime=Totaltime*3600;%Edit 6/1/2017
                 case 'No'
                     minDt = 0;
                     delete(h)
@@ -550,7 +548,8 @@ Jump;
             check = X(t,a);
             if Inv_mod==1
               check(check<d/2) = d-check(check<d/2);
-            if length(check<d/2)>1 && Warning_flag==0
+            % if length(check<d/2)>1 && Warning_flag==0	%%ZZ length returns array dimension
+				if max(check<d/2)>0 && Warning_flag==0	%ZZ max returns the maximum element
                 hh=msgbox('Some eggs crossed the upstream boundary and where bounced back to the domain','FluEgg Warning','warn');
                 pause(2)
                 Warning_flag=Warning_flag+1;
@@ -995,4 +994,3 @@ Jump;
 %toc
 %profreport
 end %FluEgg function
-
