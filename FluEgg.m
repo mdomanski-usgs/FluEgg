@@ -130,7 +130,12 @@ end
 function Xi_input_Callback(hObject, ~, handles)
 hFluEggGui = getappdata(0,'hFluEggGui');
 HECRAS_data=getappdata(hFluEggGui,'inputdata');
-HECRAS_time_index=1; %I need to think about what would happen if temp varies with time.TG
+%---------------------------------------------------------------
+% NOTE: EDITS MADE BY LORI 1/24/2018
+%---------------------------------------------------------------
+%HECRAS_time_index=1; %I need to think about what would happen if temp varies with time.TG
+HECRAS_time_index=HECRAS_data.HECRASspawiningTimeIndex;
+%---------------------------------------------------------------
 Riverinputfile=HECRAS_data.Profiles(HECRAS_time_index).Riverinputfile;
 CumlDistance = single(Riverinputfile(:,2));   %Km
 Depth = Riverinputfile(:,3);          %m

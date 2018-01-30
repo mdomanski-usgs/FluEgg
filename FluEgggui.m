@@ -120,7 +120,7 @@ try
    % datestr(HECRAS_StartingTime)-->for debugging
    % datestr(SpawningTime)-->for debugging
 catch %if steady state
-HECRAS_time_index=1;
+%HECRAS_time_index=1;
 end
       
 %Cell dependant variables
@@ -940,6 +940,7 @@ Jump;
         hFluEggGui = getappdata(0,'hFluEggGui');
         HECRAS_data=getappdata(hFluEggGui,'inputdata');
 
+
         %display error for users
         if HECRAS_time_index<1||HECRAS_time_index>length(HECRAS_data.Profiles)
                 ed=errordlg([{'HEC-RAS simulation time error'},{'Please review HEC-RAS simulation time and make sure it is long enough to perform FluEgg simulation.'}],'Error');
@@ -967,6 +968,17 @@ Jump;
         Vvert = Riverinputfile(:,7);          %m/s
         Ustar = Riverinputfile(:,8);          %m/s
         
+        %IMPORTANT!!!!
+        %9/21/2017 Lori is adding an extra cell to end of river files so 
+        %delete this after done!!!!
+        CumlDistance(end+1)=500+CumlDistance(end);
+        Depth(end+1)=Depth(end);
+        Q(end+1)=Q(end);
+        Vmag(end+1)=Vmag(end);
+        Vlat(end+1)=Vlat(end);
+        Vvert(end+1)=Vvert(end);
+        Ustar(end+1)=Ustar(end);
+        
         %%ZZ batch simulation
         if strcmp(get(handles.Batch,'Checked'),'on')
         if size(HECRAS_data.Batch.Batchinputfile_hdr) == [1 8] % If there is a batch input file
@@ -978,6 +990,7 @@ Jump;
         else
             Temp = Riverinputfile(:,9);          %C
         end
+        Temp(end+1)=Temp(end);
         %==========================================================================
         %% Calculations
         Width = abs(Q./(Vmag.*Depth));               %m
@@ -986,8 +999,8 @@ Jump;
         
         function [ks]=Ks_calculate()
             %% Input data needed to calculate ks
-            Depth = Riverinputfile(:,3);         %m
-            Ustar = Riverinputfile(:,8);           %m/s
+            %Depth = Riverinputfile(:,3);         %m
+            %Ustar = Riverinputfile(:,8);           %m/s
             ks = 11*Depth./exp((VX.*0.41)./Ustar); %m
         end
         
