@@ -196,118 +196,128 @@ end
 
 function Running_Callback(hObject, eventdata, handles)
 
-%% Get data from Handles
-%==========================================================================
-handles.userdata.Larvae=get(handles.Larvae,'Checked');
-handles.userdata.Num_Eggs=str2double(get(handles.Num_Eggs,'String'));
-handles.userdata.Xi=str2double(get(handles.Xi_input,'String'));
-handles.userdata.Yi=str2double(get(handles.Yi_input,'String'));
-handles.userdata.Zi=str2double(get(handles.Zi_input,'String'));
-handles.userdata.Dt=str2double(get(handles.Dt,'String'));
-handles.userdata.Totaltime=str2double(get(handles.Totaltime,'String'));
+    % Get data from Handles
+    %==========================================================================
+    handles.userdata.Larvae = get(handles.Larvae, 'Checked');
+    handles.userdata.Num_Eggs = str2double(get(handles.Num_Eggs, 'String'));
+    handles.userdata.Xi = str2double(get(handles.Xi_input, 'String'));
+    handles.userdata.Yi = str2double(get(handles.Yi_input, 'String'));
+    handles.userdata.Zi = str2double(get(handles.Zi_input, 'String'));
+    handles.userdata.Dt = str2double(get(handles.Dt, 'String'));
+    handles.userdata.Totaltime = str2double(get(handles.Totaltime, 'String'));
 
-%This is to check Dt for stability
-CheckDt = 0;
+    %This is to check Dt for stability
+    CheckDt = 0;
 
-%% Get data from main GUI
-%==========================================================================
-
-%% Check if we are in Batch mode - If batch simulation is checked under
-%  the tool drop down menu in the main GUI, activate the Batch Run GUI
-%  when the Run Simulation button is pressed. (Updated 2/28/2017 LJ & TG)
-Batchmode=get(handles.Batch,'Checked');
-if strcmp(Batchmode,'on')
-    ed=batchgui();
-    uiwait(ed);
-    hFluEggGui = getappdata(0,'hFluEggGui');
-    inputdata=getappdata(hFluEggGui,'inputdata');
-    continuee=inputdata.Batch.continuee;
-    NumSim=inputdata.Batch.NumSim;
-end
-
-hFluEggGui=getappdata(0,'hFluEggGui');
-
-% user errors
-if length(get(handles.edit_River_name, 'String'))<2
-    ed = errordlg('Please input the river name','Error');
-    set(ed, 'WindowStyle', 'modal');
-    uiwait(ed);
-    return
-end
-if isnan(handles.userdata.Num_Eggs)||isnan(handles.userdata.Xi)||isnan(handles.userdata.Yi)||isnan(handles.userdata.Zi)||isnan(handles.userdata.Dt)||isnan(handles.userdata.Totaltime)
-    msgbox('Empty input field. Please make sure all required fields are filled out correctly ','FluEgg Error: Empty fields','error');
-    return
-end
-if handles.userdata.Num_Eggs<0||handles.userdata.Xi<0||handles.userdata.Yi<0||handles.userdata.Dt<0||any(handles.userdata.Totaltime<0)
-    msgbox('Incorrect negative value. Please make sure all required fields are filled out correctly ','FluEgg Error: Incorrect negative value','error');
-    return
-end
-
-if handles.userdata.Zi>0
-    msgbox('Incorrect input value. Water surface is located at Zi=0, Zi must be equal or less than zero.','FluEgg Error: Incorrect input value','error');
-    return
-end
-
-
-%% Batch Run
-% --> Right now the batch run only has the capability to run a batch
-% simulation for one set of inputs. The number of simulations is read from
-% the batch GUI. (Updated 2/28/2017 LJ & TG)
-
-if strcmp(Batchmode,'on')
+    % Get data from main GUI
+    %==========================================================================
     
-    for k=1:NumSim
-        handles.userdata.RunNumber = k;
-        if k==1
-            [minDt,CheckDt,Exit] = FluEgggui(hObject, eventdata,handles,CheckDt);
-            %% Checking Dt
-            if handles.userdata.Dt>minDt  % If we exit the running function because Dt is to large, correct Dt
-                set(handles.Dt,'String',minDt);
-                handles.userdata.Dt = minDt;
-                FluEgggui(hObject, eventdata,handles,CheckDt);
+    % user errors
+    if length(get(handles.edit_River_name, 'String')) < 2
+        ed = errordlg('Please input the river name','Error');
+        set(ed, 'WindowStyle', 'modal');
+        uiwait(ed);
+        return
+    end
+    if isnan(handles.userdata.Num_Eggs) || isnan(handles.userdata.Xi) ...
+            || isnan(handles.userdata.Yi)||isnan(handles.userdata.Zi)|| ...
+            isnan(handles.userdata.Dt)||isnan(handles.userdata.Totaltime)
+        msgbox(['Empty input field. Please make sure all required fields '...
+            'are filled out correctly '], 'FluEgg Error: Empty fields','error');
+        return
+    end
+    if handles.userdata.Num_Eggs<0 || handles.userdata.Xi<0 ...
+            || handles.userdata.Yi<0 || handles.userdata.Dt<0 ...
+            || any(handles.userdata.Totaltime<0)
+        msgbox(['Incorrect negative value. Please make sure all required '...
+            'fields are filled out correctly '], ...
+            'FluEgg Error: Incorrect negative value', 'error');
+        return
+    end
+
+    if handles.userdata.Zi>0
+        msgbox(['Incorrect input value. Water surface is located at '...
+            'Zi=0, Zi must be equal or less than zero.'], ...
+            'FluEgg Error: Incorrect input value','error');
+        return
+    end
+
+    % Check if we are in Batch mode - If batch simulation is checked under
+    %  the tool drop down menu in the main GUI, activate the Batch Run GUI
+    %  when the Run Simulation button is pressed. (Updated 2/28/2017 LJ & TG)
+
+    % Batch Run
+    % --> Right now the batch run only has the capability to run a batch
+    % simulation for one set of inputs. The number of simulations is read from
+    % the batch GUI. (Updated 2/28/2017 LJ & TG)
+    
+    Batchmode = get(handles.Batch, 'Checked');
+
+    if strcmp(Batchmode,'on')
+        
+        ed = batchgui();
+        uiwait(ed);
+        hFluEggGui = getappdata(0, 'hFluEggGui');
+        inputdata = getappdata(hFluEggGui, 'inputdata');
+        NumSim = inputdata.Batch.NumSim;
+
+        for k=1:NumSim
+            handles.userdata.RunNumber = k;
+            if k==1
+                [minDt, CheckDt, Exit] = FluEgggui(hObject, eventdata, ...
+                    handles, CheckDt);
+                % Checking Dt
+                % If we exit the running function because Dt is to 
+                % large, correct Dt
+                if handles.userdata.Dt > minDt  
+                    set(handles.Dt,'String',minDt);
+                    handles.userdata.Dt = minDt;
+                    FluEgggui(hObject, eventdata, handles, CheckDt);
+                end
+            else
+                FluEgggui(hObject, eventdata, handles, CheckDt);
             end
-        else
-            FluEgggui(hObject, eventdata,handles,CheckDt);
         end
-    end
-    
-else
-    
-    [minDt,CheckDt,Exit]=FluEgggui(hObject, eventdata,handles,CheckDt);
-    
-    %% Checking Dt for stability
-    
-    if handles.userdata.Dt>minDt  % If we exit the running function because Dt is to large, correct Dt
-        set(handles.Dt,'String',minDt);
-        handles.userdata.Dt = minDt;
-        FluEgggui(hObject, eventdata,handles,CheckDt);
-    end
-    
-end
 
-%% If simulation time greater than hatching time
-if minDt==0
-    return
-end
+    else
 
-try
-    if Exit==0
-        % Make invisible
-        set(handles.Running,'Visible',       'off');
-        
-        % Make Results Visible
-        set(handles.panel_Results,'Visible', 'on');
-        set(handles.Results,'Visible',       'on');
-        set(handles.NewSim_Button,'Visible', 'on');
-        diary off
-        
-        guidata(handles.FluEgg_main, handles); %update handles
+        [minDt, CheckDt, Exit] = FluEgggui(hObject, eventdata, ...
+            handles, CheckDt);
+
+        % Checking Dt for stability
+
+        % If we exit the running function because Dt is to large, correct Dt
+        if handles.userdata.Dt > minDt  
+            set(handles.Dt,'String',minDt);
+            handles.userdata.Dt = minDt;
+            FluEgggui(hObject, eventdata, handles, CheckDt);
+        end
+
     end
-catch
-    %If there was an error during the simulation (FluEgggui)
-    msgbox('An unexpected error occurred, FluEgg is going to close','FluEgg error','error')
-    pause(4)
-end
+
+    % If simulation time greater than hatching time
+    if minDt==0
+        return
+    end
+
+    try
+        if Exit==0
+            % Make invisible
+            set(handles.Running,'Visible',       'off');
+
+            % Make Results Visible
+            set(handles.panel_Results,'Visible', 'on');
+            set(handles.Results,'Visible',       'on');
+            set(handles.NewSim_Button,'Visible', 'on');
+            diary off
+
+            guidata(handles.FluEgg_main, handles); %update handles
+        end
+    catch
+        %If there was an error during the simulation (FluEgggui)
+        msgbox('An unexpected error occurred, FluEgg is going to close','FluEgg error','error')
+        pause(4)
+    end
 end
 
 %% Analyze the Results::::::::::::::::::::::::::::::::::::::::::::::::::::::%

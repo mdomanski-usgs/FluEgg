@@ -59,18 +59,18 @@ end
 % --- Executes on button press in Browse_button.
 function Browse_button_Callback(hObject, eventdata, handles)
 % When user selects the results file
-%% Main handles
-setappdata(0,'handleResults',gcf); %gcf-->get current GUI
-handleResults=getappdata(0,'handleResults'); %0 means root-->storage in desktop
-[filename, pathname] = uigetfile('./results/Results_*.mat', 'Open result file');
-fullpath_result = [pathname,filename];
-load (fullpath_result);
-setappdata(handleResults, 'ResultsSim', ResultsSim);
-setappdata(handleResults, 'fullpath_result', fullpath_result);
-setappdata(handleResults, 'pathname',pathname);
-set(handles.ResultsPathName,'string',filename);
-beep
-guidata(hObject, handles);
+    % Main handles
+    setappdata(0, 'handleResults', gcf); %gcf-->get current GUI
+    handleResults = getappdata(0, 'handleResults'); %0 means root-->storage in desktop
+    [filename, pathname] = uigetfile('./results/Results_*.mat', 'Open result file');
+    fullpath_result = [pathname, filename];
+    load(fullpath_result);
+    setappdata(handleResults, 'ResultsSim', ResultsSim);
+    setappdata(handleResults, 'fullpath_result', fullpath_result);
+    setappdata(handleResults, 'pathname',pathname);
+    set(handles.ResultsPathName, 'string', filename);
+    % beep
+    guidata(hObject, handles);
 end
 
 function generate_Callback(hObject, ~, handles)
