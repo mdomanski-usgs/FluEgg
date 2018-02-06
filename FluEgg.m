@@ -20,7 +20,7 @@
 
 function varargout = FluEgg(varargin)
 
-% Last Modified by GUIDE v2.5 28-Feb-2017 10:42:46
+% Last Modified by GUIDE v2.5 06-Feb-2018 13:51:20
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -668,4 +668,15 @@ switch Batchmode %:Updated TG & LJ 2/28/2017
     case 'off'
         set(handles.Batch, 'Checked','on')
 end
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function FluEgg_main_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to FluEgg_main (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+    if ~isdir('.\results')
+        mkdir('.\results')
+    end
 end
