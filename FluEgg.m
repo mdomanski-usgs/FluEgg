@@ -162,7 +162,7 @@ val = get(handles.popup_EggsChar,'Value');
 
 % Set current data to the selected data set.
 switch str{val};
-    case 'Use diameter and egg density time series (Chapman and George (2011, 2014))'
+    case 'Use egg diameter and density time series (Chapman and George (2011, 2014))'
         set(handles.textDiameter,'Visible',       'off');
         set(handles.ConstD,'Visible',             'off');
         set(handles.textDensity,'Visible',        'off');

@@ -272,7 +272,7 @@ switch str{val};
         Rhoe_ref = single(str2double(get(handles.ConstRhoe,'String')));
         Rhoe_ref = Rhoe_ref*ones(length(time),1,'single');
         Tref = str2double(get(handles.Tref,'String'));
-    case 'Use diameter and egg density time series (Chapman and George (2011, 2014))'
+    case 'Use egg diameter and density time series (Chapman and George (2011, 2014))'
         Tref = 22; %C
         [D,Rhoe_ref] = EggBio;
         % Are we doing inverse modeling? TG

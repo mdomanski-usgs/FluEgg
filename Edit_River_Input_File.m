@@ -691,7 +691,10 @@ h.YLabel.Visible    = 'on';
 h.XMinorTick        = 'on';
 box( h, 'on')
 grid(h, 'on')
+%%%Added by Lori J. 4/20/2018 to add a legend to the plot
+legend1 = legend( h, 'HEC-RAS Simulation', 'Observed Data', 'show');
 set( h, 'XMinorTick','on');
+
 
 %% Sub-functions 
     function [date_axis, Yylabel] = plotProfiles(handles)
@@ -803,6 +806,7 @@ set( h, 'XMinorTick','on');
         hFluEggGui  = getappdata(0,'hFluEggGui');
         obs_data    = getappdata(hFluEggGui,'obsdata');
         h = handles.Plot_Hydrograph;
+        
         
         if ~isempty(obs_data)
             % Observed data was loaded in FluEgg
@@ -918,7 +922,7 @@ end
             end
             %%===========
             Profiles=Profiles(3:end);%Without the first two rows (All profiles & Max WS)
-            % HECRAS_data.Profiles.Date=Profiles;
+            %HECRAS_data.Profiles.Date=Profiles;
             HECRAS_data.Profiles(length(Profiles),1).Riverinputfile=NaN;
             waitbar(0,h,['Please wait....' 'Importing HEC-RAS data']);
             for i=1:length(Profiles)
