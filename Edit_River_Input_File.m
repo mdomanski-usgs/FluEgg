@@ -859,28 +859,31 @@ elseif strcmp(what,   'Continue')
 end
 
 %==========================================================================
-%% Error load data
-%% Check user loaded HEC-RAS project
+% Error load data
+% Check user loaded HEC-RAS project
     function error_load()
         ed = errordlg('Please load the HEC-RAS project and import the data into FluEgg','Error');
         set(ed, 'WindowStyle', 'modal');
         uiwait(ed);
     end
 %==========================================================================
-%% Import Data
+% Import Data
     function import_data()
+        
         lngProfile = get(handles.popup_HECRAS_profile,'Value')-1;   % Profile Number
-        if lngProfile==0 % If unsteady state-->Multiple profiles
-            Profiles=get(handles.popup_HECRAS_profile,'string');
-            %% Check user loaded HEC-RAS project
-            if  (strcmp(Profiles,' ') == 1)
+        
+        if lngProfile == 0 % If unsteady state-->Multiple profiles
+            
+            Profiles = get(handles.popup_HECRAS_profile,'string');
+            % Check user loaded HEC-RAS project
+            if (strcmp(Profiles,' ') == 1)
                 ed = errordlg('Please load the HEC-RAS project and import the data into FluEgg','Error');
                 set(ed, 'WindowStyle', 'modal');
                 uiwait(ed);
                 return
             end
-            %%=========================================================================
-            %% Iniciate Waitbar
+            %=========================================================================
+            % Iniciate Waitbar
             h = waitbar(0,'Importing HEC-RAS data...','Name','Importing HEC-RAS data,please wait...',...
                 'CreateCancelBtn',...
                 'setappdata(gcbf,''canceling'',1)');
@@ -890,12 +893,16 @@ end
                 Exit=1;
                 return;
             end
-            %%===========
+            %===========
             Profiles=Profiles(3:end);%Without the first two rows (All profiles & Max WS)
-            % HECRAS_data.Profiles.Date=Profiles;
+            
+            % initialize HECRAS_data
             HECRAS_data.Profiles(length(Profiles),1).Riverinputfile=NaN;
+            
             waitbar(0,h,['Please wait....' 'Importing HEC-RAS data']);
             for i=1:length(Profiles)
+                
+                % update the wait bar
                 if ~mod(i, 5) || i==length(Profiles)
                     fill=i/length(Profiles);
                     % Check for Cancel button press
@@ -907,9 +914,12 @@ end
                     % Report current estimate in the waitbar's message field
                     waitbar(fill,h,['Please wait....' sprintf('%12.0f',fill*100) '%']);
                 end
+                
                 HECRAS_data.Profiles(i).Date=Profiles(i);
+                
+                % strFilename is the file name of the RAS project
                 try
-                    HECRAS_data.Profiles(i).Riverinputfile=Extract_RAS(handles.strFilename,handles,i);
+                    HECRAS_data.Profiles(i).Riverinputfile = Extract_RAS(handles.strFilename, handles, i);
                 catch
                     ed = errordlg('Error importing data','Error');
                     set(ed, 'WindowStyle', 'modal');
@@ -920,21 +930,19 @@ end
             end
             close(h);delete(h)
             clear Profiles
-            %     msgbox('Feature under development, no available','FluEgg message')
-            %     return
         else
             HECRAS_data.Profiles(1).Riverinputfile = ...
-                Extract_RAS(handles.strFilename,handles,1); sta
+                Extract_RAS(handles.strFilename,handles,lngProfile);
         end
-        %% Save data in hFluEggGui
+        % Save data in hFluEggGui
         hFluEggGui = getappdata(0,'hFluEggGui');
         setappdata(hFluEggGui,'inputdata',HECRAS_data);
-        %%
+        %
         set(handles.Set_up_spawning_time,'Visible','on')
     end %import data function
 
 %==========================================================================
-%% Import Time Series Data
+% Import Time Series Data
     function import_TS()
         try
             %HECRAS_data.TimeSeries(length(list),1) = NaN;
