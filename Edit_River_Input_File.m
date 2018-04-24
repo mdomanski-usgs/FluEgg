@@ -619,12 +619,71 @@ function pushbutton_plot_Callback(hObject, eventdata, handles)
     str = get(handles.popup_variable,'String');
     val = get(handles.popup_variable,'Value');
     
+    % Add model evaluation results to polot
+    pbiasstr = strcat({'PBIAS ='}, {' '}, {num2str(pbias)});
+    nsestr   = strcat({'NSE ='}  , {' '}, {num2str(nse)});
+    txt = sprintf('%s \n%s', pbiasstr{1}, nsestr{1});
+    uicontrol('style'   ,'text',...
+          'String'  , txt,...
+          'Position', [950 150 180 50],...
+          'Max'     , 2,...
+          'FontSize', 12,...
+          'BackgroundColor', 'white');
+end
+%% Format plot
+h = handles.Plot_Hydrograph;
+h.FontName          = 'Arial';
+h.XLabel            = xlabel('Time', 'FontSize',14 );
+h.Visible           = 'on';
+%h.XTickLabel        = date_axis;
+h.XTickLabel        = datestr(h.XTick, 'mm/dd/yy HH:MM');
+h.XColor            = 'k';
+h.XLabel.Visible    = 'on';
+h.YLabel            = ylabel(Yylabel, 'FontSize',14);
+h.YLabel.Visible    = 'on';
+h.XMinorTick        = 'on';
+box( h, 'on')
+grid(h, 'on')
+%%%Added by Lori J. 4/20/2018 to add a legend to the plot
+legend1 = legend( h, 'HEC-RAS Simulation', 'Observed Data', 'show');
+set( h, 'XMinorTick','on');
+
+
+%% Sub-functions 
+    function [date_axis, Yylabel] = plotProfiles(handles)
+        %% As coded by Tatiana
+        hFluEggGui = getappdata(0,'hFluEggGui');
+        try
+            HECRAS_data = getappdata(hFluEggGui,'inputdata'); %0 means root-->storage in desktop
+            h = handles.Plot_Hydrograph;
+            %% Determine the parameter to plot
+            str = get(handles.popup_River_Station, 'String');
+            val = get(handles.popup_River_Station,'Value');
+            % Hydrographs:
+            if get(handles.checkbox_flow,'value') == 1
+                set(handles.checkbox_H,'value',0)
+                Hydrograph = arrayfun(@(x) x.Riverinputfile(val,4), HECRAS_data.Profiles);
+                Yylabel = 'Flow, in cubic meters per second';
+            elseif get(handles.checkbox_H,'value') == 1
+                set(handles.checkbox_flow,'value',0)
+                Hydrograph = arrayfun(@(x) x.Riverinputfile(val,3), HECRAS_data.Profiles);
+                Yylabel = 'Water depth, in meters';
+            else
+                m = msgbox('Please select a variable to plot','FluEgg error','error');
+                uiwait(m)
+                return
+            end %if
+        catch
+            m = msgbox('Please import data and try again','FluEgg error','error');
+            uiwait(m)
+            return
     % a mess
     if strcmp(str, ' Variable')
         if get(handles.checkbox_flow, 'Value')
             var = 'Flow';
         else
             var = 'Stage';
+
         end
     else
         var = str{val};
@@ -793,8 +852,39 @@ function pushbutton_plot_Callback(hObject, eventdata, handles)
                 h2.MarkerEdgeColor  = 'k';
                 h2.MarkerSize       = 2;
             end
-
-        end %plot_obs_data()
+        end %if
+        
+        % Format Date data for plot
+        date = arrayfun(@(x) datenum(x,'ddmmyyyy HHMM'), HECRAS_data.Dates);
+        date_axis = datestr(date, 'mm/dd/yy HH:MM AM');
+        
+        % Create Axes and line object
+         plot(h, date, Hydrograph, 'linewidth',2);
+    end %plotTS()
+    function plot_obs_data(handles)
+        % Add Observed data to plot, if any
+        hFluEggGui  = getappdata(0,'hFluEggGui');
+        obs_data    = getappdata(hFluEggGui,'obsdata');
+        h = handles.Plot_Hydrograph;
+        
+        
+        if ~isempty(obs_data)
+            % Observed data was loaded in FluEgg
+            % Format dates for plotting
+            text1 = obs_data.data{1,2};
+            text2 = obs_data.data{1,3};
+            profile = arrayfun(@(x, y) strcat(x,{' '},y), text1, text2);
+            date = arrayfun(@(x) datenum(x,'ddmmyyyy HHMM'), profile);
+            hydrograph = obs_data.data{1,4};
+            
+            %Add line to plot and add format
+            h2 = line(date, hydrograph, 'Parent', h);
+            h2.LineStyle        = 'none';
+            h2.Marker           = 's';
+            h2.MarkerEdgeColor  = 'k';
+            h2.MarkerSize       = 2;
+        end
+    end %plot_obs_data()
 end % pushbutton_plot_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in pushbutton_table.
@@ -892,7 +982,7 @@ end
             end
             %%===========
             Profiles=Profiles(3:end);%Without the first two rows (All profiles & Max WS)
-            % HECRAS_data.Profiles.Date=Profiles;
+            %HECRAS_data.Profiles.Date=Profiles;
             HECRAS_data.Profiles(length(Profiles),1).Riverinputfile=NaN;
             waitbar(0,h,['Please wait....' 'Importing HEC-RAS data']);
             for i=1:length(Profiles)
