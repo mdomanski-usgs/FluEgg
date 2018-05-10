@@ -25,6 +25,96 @@
 % already implemented. TG                                                 %
 
 function [minDt,CheckDt,Exit]=FluEgggui(~, ~,handles,CheckDt)
+% Parameters
+%
+% handles - Structure containing graphics objects and fields
+%
+%   Inverse_modeling: graphics object
+%       Checked: 1, -1
+%           1 - Forward modeling
+%           -1 - Revers modeling
+%   
+%   edit_Starting_Date: graphics object
+%       String: String of starting date in ddmmyyyy format
+%   
+%   edit_Starting_time: graphics object
+%       String: String of starting time in HHMM format
+%   
+%   popu_EggsChar: graphics object
+%       String: Cell array containing egg diameter and density options
+%           {'Use constant egg diameter and density', 
+%               'Use egg diameter and density time series (Chapman and George (2011, 2014))'}
+%       Value: Current selection index
+%   
+%   userdata
+%       Totaltime: float
+%           Total simulation time in hours 
+%       Xi, Yi, Zi: float
+%           Spawning location in meters
+%       Max_Sim_Time: float
+%           Maximum simulation time in seconds
+%       Larve: 'on', 'off'
+%           Indicates if simulation will occur until gas bladder inflation (GBI)
+%           If 'on', Max_Sim_Time is set to time of gas bladder inflation
+%           If 'off', Max_Sim_Time is set to time of hatching
+%       Dt: Cast-able as a single
+%           Time step in seconds
+%
+%       RunNumber: String
+%   
+%   Silver, Bighead
+%       Value: 1 or anything else
+%           Indicates which species is selected.
+%           If Silver is 1, Silver is selected.
+%           If Bighead is 1 and Silver is not, Bighead is selected.
+%           If neither Silver nor Bighead are 1, Grass is selected.
+%   
+%   Xi_input
+%       String: String that can be converted to a double with str2double()
+%           User input for first cell
+%   
+%   Totaltime
+%       String:
+%           Run time in hours
+%   
+%   ConstD
+%       String: String of constant diameter as castable float
+%   
+%   ConstRhoe
+%       String: String of constant density as castable float
+%   
+%   Tref
+%       String: String of reference temperature (?) as castable float
+%       
+%   popup_roughness
+%       String: Cell array containing roughness equation options
+%           {'Log Law Smooth Bottom Boundary (Case flumes)',
+%               'Log Law Rough Bottom Boundary (Case rivers)'}
+%       Value: Current selection index
+%
+%   edit_River_name
+%       String: 
+%
+%   Dt
+%       String:
+%
+%   Batch
+%       Checked: 'on', anything else ?
+%           Indicates if batch mode is selected
+%
+%
+%
+% CheckDT - boolean, 1 or 0. Indicates if Dt has been checked. The function will 
+%           call the nested function Checking_Dt if CheckDt is 0.
+%
+% The function also accesses root (0) with getappdata()
+% Name: hFlueEggGui
+%   Also accessed in nested function Check_if_egg_isin_newcell_or_New_Hydraulic_time_step    
+%   Name: inputdata. Structure initialized as HECRAS_data
+%       Field: HECRASspawningTimeIndex
+%       Field: Profiles
+%       Field: HECRAS_time_sec is set as an array 0:HDt:Totaltime. Accessed in 
+%           Check_if_egg_isin_newcell_or_New_Hydraulic_time_step
 
 % Are we doing inverse modeling? TG
 Inv_mod_status=get(handles.Inverse_modeling,'Checked');
